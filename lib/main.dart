@@ -17,6 +17,11 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
       ),
       home: const MenuScreen(),
+      routes: {
+        '/riego': (context) => const RiegoScreen(),
+        '/esp': (context) => const ESPScreen(),
+        '/usuario': (context) => const UsuarioScreen(),
+      },
     );
   }
 }
@@ -40,18 +45,21 @@ class MenuScreen extends StatelessWidget {
               context: context,
               title: 'Monitoreo de Riego',
               icon: Icons.water_drop,
+              onTap: () => Navigator.pushNamed(context, '/riego'),
             ),
             const SizedBox(height: 16),
             _buildMenuOption(
               context: context,
-              title: 'Monitoreo de Maquinaria',
-              icon: Icons.agriculture,
+              title: 'Configuración del ESP',
+              icon: Icons.developer_board, // O usar Icons.settings
+              onTap: () => Navigator.pushNamed(context, '/esp'),
             ),
             const SizedBox(height: 16),
             _buildMenuOption(
               context: context,
               title: 'Usuario',
               icon: Icons.person,
+              onTap: () => Navigator.pushNamed(context, '/usuario'),
             ),
           ],
         ),
@@ -63,6 +71,7 @@ class MenuScreen extends StatelessWidget {
     required BuildContext context,
     required String title,
     required IconData icon,
+    required VoidCallback onTap,
   }) {
     return Card(
       elevation: 4,
@@ -71,9 +80,7 @@ class MenuScreen extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // Aquí puedes agregar la navegación a otras pantallas
-        },
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -93,6 +100,43 @@ class MenuScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Pantallas de ejemplo
+class RiegoScreen extends StatelessWidget {
+  const RiegoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Monitoreo de Riego')),
+      body: const Center(child: Text('Contenido de Monitoreo de Riego')),
+    );
+  }
+}
+
+class ESPScreen extends StatelessWidget {
+  const ESPScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Configuración del ESP')),
+      body: const Center(child: Text('Contenido de Configuración del ESP')),
+    );
+  }
+}
+
+class UsuarioScreen extends StatelessWidget {
+  const UsuarioScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Usuario')),
+      body: const Center(child: Text('Contenido de Usuario')),
     );
   }
 }
