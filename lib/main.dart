@@ -112,7 +112,7 @@ class RiegoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Monitoreo de Riego')),
-      body: const Center(child: Text('Contenido de Monitoreo de Riego')),
+      body: const Center(child: Text('Aquí va el monitoreo de riego')),
     );
   }
 }
