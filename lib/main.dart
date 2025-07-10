@@ -36,6 +36,8 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Menú'),
+        centerTitle: true,
         backgroundColor: Color(0xffFFE4AF),
       ),
       body: Padding(
