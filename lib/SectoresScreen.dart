@@ -7,7 +7,7 @@ class SensoresScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sensores'),
+        title: const Text('Sectores'),
         centerTitle: true,
         backgroundColor: const Color(0xffFFE4AF),
         leading: IconButton(
@@ -69,34 +69,36 @@ class SensoresScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Image.asset('image/riego.png', width: 90, height: 90),
-              Column(
-                children: [
-                  Text(
-                    sector,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              Image.asset('image/riego.png', width: 60, height: 60),
+              FittedBox(
+                fit: BoxFit.contain,
+                child: Column(
+                  children: [
+                    Text(
+                      sector,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      _buildIndicator(
-                        'Humedad    ',
-                        humedad,
-                        Icons.water_drop,
-                        Colors.blue,
-                      ),
-                      const SizedBox(width: 16),
-                      _buildIndicator(
-                        'Temperatura',
-                        temperatura,
-                        Icons.thermostat,
-                        Colors.red,
-                      ),
-                    ],
-                  ),
-                ],
+                    Row(
+                      children: [
+                        _buildIndicator(
+                          'Humedad    ',
+                          humedad,
+                          Icons.water_drop,
+                          Colors.blue,
+                        ),
+                        _buildIndicator(
+                          'Temperatura',
+                          temperatura,
+                          Icons.thermostat,
+                          Colors.red,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -127,7 +129,7 @@ class SensoresScreen extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
               ),
               Text(
                 value,

@@ -49,14 +49,17 @@ Widget _buildSensorCard(String sector, String humedad, String temperatura) {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset('image/arbol.png', width: 90, height: 90),
+          Image.asset('image/arbol.png', width: 60, height: 60),
           Column(
             children: [
-              Text(
-                sector,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              FittedBox(
+                fit: BoxFit.contain,
+                child: Text(
+                  sector,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               Row(
@@ -67,7 +70,6 @@ Widget _buildSensorCard(String sector, String humedad, String temperatura) {
                     Icons.water_drop,
                     Colors.blue,
                   ),
-                  const SizedBox(width: 16),
                   _buildIndicator(
                     'Temperatura',
                     temperatura,
@@ -101,7 +103,7 @@ Widget _buildIndicator(String label, String value, IconData icon, Color color) {
           children: [
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 10, color: Colors.grey[600],),
             ),
             Text(
               value,
