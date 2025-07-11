@@ -43,6 +43,7 @@ class RiegoScreen extends StatelessWidget {
           ],
         ),
       ),
+      body: const Center(child: Text('reportes')),
     );
   }
 
