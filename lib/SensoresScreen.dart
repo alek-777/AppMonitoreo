@@ -17,7 +17,8 @@ class SensoresScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: ListView(
+          scrollDirection: Axis.vertical,
           children: [
             _buildSensorCard('Sector1', '60%', '32°'),
             const SizedBox(height: 12),
