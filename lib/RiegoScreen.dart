@@ -7,7 +7,7 @@ class RiegoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Menú'),
+        title: const Text('Monitoreo de riego'),
         centerTitle: true,
         backgroundColor: const Color(0xffFFE4AF),
         leading: IconButton(
