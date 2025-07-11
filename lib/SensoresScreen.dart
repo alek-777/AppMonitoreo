@@ -58,7 +58,7 @@ class SensoresScreen extends StatelessWidget {
             Row(
               children: [
                 Image.asset(
-                  'image/arbol.png',
+                  'image/riego.png',
                   width: 30,
                   height: 30,
                 ),
