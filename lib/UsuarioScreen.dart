@@ -12,6 +12,7 @@ class UsuarioScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Usuario'),
+        centerTitle: true,
         backgroundColor: Color(0xffFFE4AF),
       ),
       body: Container(

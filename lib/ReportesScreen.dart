@@ -19,6 +19,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reportes'),
+        centerTitle: true,
         backgroundColor: const Color(0xffFFE4AF),
       ),
       body: Container(
@@ -72,7 +73,12 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 children: [
                   Image.asset('image/reporte.png', width: 250, height: 250,),
                   const SizedBox(height: 50),
-                  ElevatedButton( onPressed: () => {print("s")}, child: Text("Generar Reporte")),
+                  ElevatedButton( onPressed:  () => {print("s")},
+                  style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  ), 
+                  child: Text("Generar Reporte")),
                 ],
               ),
             ),

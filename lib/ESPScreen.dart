@@ -8,6 +8,7 @@ class ESPScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuración del ESP'),
+        centerTitle: true,
         backgroundColor: Color(0xffFFE4AF),
       ),
       body: const Center(child: Text('Contenido de Configuración del ESP')),
