@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_2/ESPScreen.dart';
 import 'package:flutter_application_2/RiegoScreen.dart';
 import 'package:flutter_application_2/UsuarioScreen.dart';
+import 'package:flutter_application_2/ReportesScreen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         '/riego': (context) => const RiegoScreen(),
         '/esp': (context) => const ESPScreen(),
         '/usuario': (context) => const UsuarioScreen(),
+        '/reportes' :(context)=> const ReportesScreen(),
       },
     );
   }
@@ -63,6 +65,13 @@ class MenuScreen extends StatelessWidget {
               title: 'Usuario',
               leading: Image.asset("image/usuario.png", width: 40, height: 40),
               onTap: () => Navigator.pushNamed(context, '/usuario'),
+            ),
+            const SizedBox(height: 16),
+            _buildMenuOption(
+              context: context,
+              title: 'Reportes',
+              leading: Image.asset("image/usuario.png", width: 40, height: 40),
+              onTap: () => Navigator.pushNamed(context, '/reportes'),
             ),
           ],
         ),
