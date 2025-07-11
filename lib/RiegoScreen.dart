@@ -10,7 +10,7 @@ class RiegoScreen extends StatelessWidget {
         title: const Text('Monitoreo de Riego'),
         backgroundColor: Color(0xffFFE4AF),
       ),
-      body: const Center(child: Text('Aquí va el monitoreo de riego')),
+      body: const Center(child: Text('reportes')),
     );
   }
 }
