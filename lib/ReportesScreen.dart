@@ -22,21 +22,23 @@ class _ReportesScreenState extends State<ReportesScreen> {
         centerTitle: true,
         backgroundColor: const Color(0xffFFE4AF),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20), // Esto es el margen externo
-        child: Container(
-          padding: const EdgeInsets.all(.8), //el problema
-          alignment: Alignment.center,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20), // Margen externo uniforme
+        child: Center(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text("Período"),
-              Padding(
-                padding: const EdgeInsets.all(5.0),
+              const Text("Período", style: TextStyle(fontSize: 18)),
+              const SizedBox(height: 10),
+
+              // Dropdowns alineados
+              SizedBox(
+                width: 200,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     DropdownButton<String>(
+                      isExpanded: true,
                       value: _tipoPeriodoSeleccionado,
                       hint: const Text("Seleccione un Período"),
                       items: _tiposPeriodo.map((String tipo) {
@@ -51,7 +53,9 @@ class _ReportesScreenState extends State<ReportesScreen> {
                         });
                       },
                     ),
+                    const SizedBox(height: 10),
                     DropdownButton<String>(
+                      isExpanded: true,
                       value: _mesSeleccionado,
                       hint: const Text("Seleccione un Mes"),
                       items: _meses.map((String mes) {
@@ -69,30 +73,22 @@ class _ReportesScreenState extends State<ReportesScreen> {
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 40),
-                child: Column(
-                  children: [
-                    Image.asset('image/reporte.png', width: 250, height: 250),
-                    const SizedBox(height: 40),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: SizedBox(
-                        width: 200,
-                        child: ElevatedButton(
-                          onPressed: () => {print("s")},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16, //Lo alto del boton
-                            ),
-                          ),
-                          child: Text("Generar Reporte"),
-                        ),
-                      ),
-                    ),
-                  ],
+
+              const SizedBox(height: 20),
+              Image.asset('image/reporte.png', width: 250, height: 250),
+              const SizedBox(height: 20),
+              // Botón alineado con los dropdowns
+              SizedBox(
+                width: 200,
+                child: ElevatedButton(
+                  onPressed: () => print("s"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
+                  child: const Text("Generar Reporte"),
                 ),
               ),
             ],
