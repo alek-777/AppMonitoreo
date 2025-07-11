@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class RiegoScreen extends StatelessWidget {
   const RiegoScreen({super.key});
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,7 +23,7 @@ class RiegoScreen extends StatelessWidget {
             _buildMenuOption(
               context: context,
               title: 'Sensores',
-              leading: Image.asset("images/riego.png", width: 80, height: 80),
+              leading: Image.asset("image/riego.png", width: 80, height: 80),
               onTap: () {
                 // Navegar a pantalla de sensores
                 Navigator.pushNamed(context, '/sensores');
@@ -33,17 +33,16 @@ class RiegoScreen extends StatelessWidget {
             _buildMenuOption(
               context: context,
               title: 'Informes',
-              leading: Image.asset("images/info.png", width: 80, height: 80),
+              leading: Image.asset("image/info.png", width: 80, height: 80),
               onTap: () {
                 // Navegar a pantalla de informes
-                Navigator.pushNamed(context, '/informes');
+                Navigator.pushNamed(context, '/reportes' );
               },
             ),
             // Puedes añadir más secciones aquí
           ],
         ),
       ),
-      body: const Center(child: Text('reportes')),
     );
   }
 
