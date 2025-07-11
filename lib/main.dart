@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/ConfiguracionSector.dart';
 import 'package:flutter_application_2/ESPScreen.dart';
 import 'package:flutter_application_2/RiegoScreen.dart';
 import 'package:flutter_application_2/UsuarioScreen.dart';
 import 'package:flutter_application_2/ReportesScreen.dart';
 import 'package:flutter_application_2/SensoresScreen.dart';
+
+
 
 void main() {
   runApp(const MyApp());
@@ -28,6 +31,7 @@ class MyApp extends StatelessWidget {
         '/usuario': (context) => const UsuarioScreen(),
         '/reportes' :(context)=> const ReportesScreen(),
         '/sensores' :(context)=> const SensoresScreen(),
+        '/configuracion' :(context)=> const ConfiguracionSector()
       },
     );
   }

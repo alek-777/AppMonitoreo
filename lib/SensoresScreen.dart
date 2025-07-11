@@ -35,7 +35,7 @@ class SensoresScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Navegar a pantalla de configuración
-          Navigator.pushNamed(context, '/configuracion-sensores');
+          Navigator.pushNamed(context, '/configuracion');
         },
         backgroundColor: const Color(0xffFFE4AF), // Mismo color que el app bar
         child: const Icon(Icons.settings, color: Colors.black), // Icono de tuerca
