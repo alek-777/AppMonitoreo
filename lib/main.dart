@@ -68,13 +68,6 @@ class MenuScreen extends StatelessWidget {
               leading: Image.asset("image/usuario.png", width: 40, height: 40),
               onTap: () => Navigator.pushNamed(context, '/usuario'),
             ),
-            const SizedBox(height: 16),
-            _buildMenuOption(
-              context: context,
-              title: 'Reportes',
-              leading: Image.asset("image/usuario.png", width: 40, height: 40),
-              onTap: () => Navigator.pushNamed(context, '/reportes'),
-            ),
           ],
         ),
       ),
