@@ -25,14 +25,14 @@ class UsuarioScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 40),
-              child: Column(
-                children: [
-                  // _buildResponsiveText(texto: "Nombre génerico de dón", size: 20), 
-                  _buildResponsiveText(texto: "Cargo: Don", size: 20)],
-              ),
-            ),
+            // Padding(
+            //   padding: const EdgeInsets.only(bottom: 40),
+            //   child: Column(
+            //     children: [
+            //       // _buildResponsiveText(texto: "Nombre génerico de dón", size: 20), 
+            //       _buildResponsiveText(texto: "Cargo: Don", size: 20)],
+            //   ),
+            // ),
             Column(
               children: [
                 _buildResponsiveText(texto: "Datos de soporte:", size: 20, weight: FontWeight.bold),
