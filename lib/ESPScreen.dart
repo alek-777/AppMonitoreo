@@ -7,11 +7,8 @@ class ESPScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        alignment: Alignment.center,
-        child: BluetoothScannerScreen(),
-      ),
+    return const Scaffold(
+      body: BluetoothScannerScreen(),
     );
   }
 }
@@ -27,6 +24,12 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
   List<BluetoothDevice> devices = [];
   bool isScanning = false;
 
+  BluetoothDevice? connectedDevice;
+  BluetoothCharacteristic? writeCharacteristic;
+  TextEditingController _textController = TextEditingController();
+
+  final String targetCharacteristicUUID = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E';
+
   @override
   void initState() {
     super.initState();
@@ -36,8 +39,8 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
   Future<void> _checkPermissions() async {
     await [
       Permission.bluetooth,
-      Permission.bluetoothConnect,
       Permission.bluetoothScan,
+      Permission.bluetoothConnect,
       Permission.locationWhenInUse,
     ].request();
   }
@@ -50,7 +53,6 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
       devices.clear();
     });
 
-    // Escuchar resultados del escaneo
     FlutterBluePlus.scanResults.listen((results) {
       for (ScanResult result in results) {
         if (!devices.contains(result.device)) {
@@ -61,23 +63,121 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
       }
     });
 
-    // Iniciar escaneo por 15 segundos
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 30));
+    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
 
     setState(() {
       isScanning = false;
     });
   }
 
+  Future<void> _connectToDevice(BluetoothDevice device) async {
+  try {
+    await device.connect(timeout: const Duration(seconds: 10));
+    
+    setState(() {
+      connectedDevice = device;
+    });
+
+    List<BluetoothService> services = await device.discoverServices();
+    print("Servicios descubiertos: ${services.length}"); // Debug
+
+    for (var service in services) {
+      print("Servicio UUID: ${service.uuid}"); // Debug
+      
+      for (var characteristic in service.characteristics) {
+        print("Característica UUID: ${characteristic.uuid}"); // Debug
+        
+        if (characteristic.uuid.toString().toLowerCase() == targetCharacteristicUUID.toLowerCase()) {
+          setState(() {
+            writeCharacteristic = characteristic;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("¡Dispositivo conectado y listo!")),
+          );
+          return;
+        }
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("No se encontró la característica de escritura.")),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error al conectar: ${e.toString()}")),
+    );
+  }
+}
+
+  Future<void> _sendMessage(String message) async {
+  if (writeCharacteristic != null) {
+    try {
+      // Primero intenta con withoutResponse (más rápido si está soportado)
+      await writeCharacteristic!.write(message.codeUnits, withoutResponse: true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Mensaje enviado: $message")),
+      );
+    } catch (e) {
+      // Si falla, intenta con withResponse (más lento pero más compatible)
+      try {
+        await writeCharacteristic!.write(message.codeUnits, withoutResponse: false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Mensaje enviado (con respuesta): $message")),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al enviar: ${e.toString()}")),
+        );
+      }
+    }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("No estás conectado a un ESP32 válido.")),
+    );
+  }
+}
+
+  Widget _buildSendBox() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _textController,
+              decoration: const InputDecoration(
+                labelText: "Mensaje para ESP32",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: () {
+              final text = _textController.text.trim();
+              if (text.isNotEmpty) {
+                _sendMessage(text);
+                _textController.clear();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configuración del ESP'),
-        backgroundColor: Color(0xffFFE4AF),
-        centerTitle: true,
+        title: const Text('Conexión ESP32 BLE'),
+        backgroundColor: const Color(0xffFFE4AF),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _startScan),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _startScan,
+          ),
         ],
       ),
       body: Column(
@@ -90,14 +190,12 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
                 elevation: 2,
-                side: BorderSide(color: Colors.black, width: 0.5),
+                side: const BorderSide(color: Colors.black, width: 0.5),
               ),
-              child: Text(
-                isScanning ? 'Escaneando...' : 'Buscar Dispositivos',
-                maxLines: 2,
-              ),
+              child: Text(isScanning ? 'Escaneando...' : 'Buscar Dispositivos'),
             ),
           ),
+          if (connectedDevice != null && writeCharacteristic != null) _buildSendBox(),
           Expanded(
             child: ListView.builder(
               itemCount: devices.length,
@@ -106,12 +204,13 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
                 return ListTile(
                   leading: const Icon(Icons.bluetooth),
                   title: Text(
-                    device.platformName.isEmpty
-                        ? 'Dispositivo Desconocido'
-                        : device.platformName,
+                    device.platformName.isEmpty ? 'Dispositivo Desconocido' : device.platformName,
                   ),
                   subtitle: Text(device.remoteId.toString()),
-                  trailing: Text(device.platformName),
+                  trailing: ElevatedButton(
+                    onPressed: () => _connectToDevice(device),
+                    child: const Text("Conectar"),
+                  ),
                 );
               },
             ),
