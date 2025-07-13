@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SensoresScreen extends StatelessWidget {
   const SensoresScreen({super.key});
+
+  Future<List<Map<String, dynamic>>> fetchData() async {
+    final response = await http.get(Uri.parse('https://monitoreo-railway-ues-production.up.railway.app/api/sensores'));
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body);
+      return jsonData.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Error al cargar los datos');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,22 +27,41 @@ class SensoresScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          scrollDirection: Axis.vertical,
-          children: [
-            _buildSensorCard('Sector1', '30%', '32°', context),
-            const SizedBox(height: 12),
-            _buildSensorCard('Sector2', '45%', '32°', context),
-            const SizedBox(height: 12),
-            _buildSensorCard('Sector3', '60%', '32°', context),
-            const SizedBox(height: 12),
-            _buildSensorCard('Sector4', '75%', '32°', context),
-            const SizedBox(height: 12),
-            _buildSensorCard('Sector5', '90%', '32°', context),
-          ],
-        ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: fetchData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No hay datos disponibles'));
+          }
+
+          // Combinar todos los sectores de todos los objetos
+          final List<Widget> sensorCards = [];
+
+          for (var item in snapshot.data!) {
+            item.forEach((sectorKey, sectorData) {
+              sensorCards.add(
+                _buildSensorCard(
+                  sectorKey.toUpperCase(),
+                  sectorData['humedad'],
+                  sectorData['temperatura'],
+                  context,
+                ),
+              );
+              sensorCards.add(const SizedBox(height: 12));
+            });
+          }
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              scrollDirection: Axis.vertical,
+              children: sensorCards,
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
