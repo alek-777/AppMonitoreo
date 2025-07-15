@@ -1,64 +1,93 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:wifi_scan/wifi_scan.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
-class WifiESP extends StatefulWidget {
-  const WifiESP({super.key});
-
-  @override
-  State<WifiESP> createState() => _WifiESPState();
+void main() {
+  runApp(
+    MaterialApp(
+      title: 'Configurador ESP32',
+      theme: ThemeData(primarySwatch: Colors.amber),
+      home: FutureBuilder<bool>(
+        future: _checkIfConfigured(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return snapshot.data == true 
+                ? ReceiverConfiguredScreen()
+                : ESPScreen();
+          }
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        },
+      ),
+    ),
+  );
 }
 
-class ConfiguredDevice {
-  final String deviceId;
-  final String deviceName;
-  final String ssid;
-  final DateTime configuredAt;
-  final String ipAddress;
+Future<bool> _checkIfConfigured() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('isConfigured') ?? false;
+}
 
-  ConfiguredDevice({
-    required this.deviceId,
-    required this.deviceName,
-    required this.ssid,
-    required this.configuredAt,
-    required this.ipAddress,
-  });
+class ESPScreen extends StatelessWidget {
+  const ESPScreen({super.key});
 
-  Map<String, dynamic> toJson() {
-    return {
-      'deviceId': deviceId,
-      'deviceName': deviceName,
-      'ssid': ssid,
-      'configuredAt': configuredAt.toIso8601String(),
-      'ipAddress': ipAddress,
-    };
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: BluetoothScannerScreen(),
+    );
   }
 }
 
-class _WifiESPState extends State<WifiESP> {
-  List<BluetoothDevice> _devices = [];
-  bool _isScanning = false;
-  BluetoothDevice? _connectedDevice;
-  BluetoothCharacteristic? _writeCharacteristic;
-  BluetoothCharacteristic? _notifyCharacteristic;
+class BluetoothScannerScreen extends StatefulWidget {
+  const BluetoothScannerScreen({super.key});
+
+  @override
+  State<BluetoothScannerScreen> createState() => _BluetoothScannerScreenState();
+}
+
+class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
+  List<BluetoothDevice> devices = [];
+  bool isScanning = false;
+  List<WiFiAccessPoint> wifiNetworks = [];
+  bool isScanningWifi = false;
+
+  BluetoothDevice? connectedDevice;
+  BluetoothCharacteristic? writeCharacteristic;
+  BluetoothCharacteristic? notifyCharacteristic;
   
-  final String _targetServiceUUID = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E';
-  final String _targetCharacteristicUUID = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E';
-  final String _notifyCharacteristicUUID = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E';
+  final String targetServiceUUID = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E';
+  final String targetCharacteristicUUID = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E';
+  final String notifyCharacteristicUUID = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E';
 
   final TextEditingController _ssidController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
-  String _connectionStatus = 'No conectado';
-  String _wifiStatus = '';
-  String _ipAddress = '';
+
+  StreamSubscription<List<int>>? notificationSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkPermissions();
+  }
+
+  @override
+  void dispose() {
+    notificationSubscription?.cancel();
+    _disconnectDevice();
+    super.dispose();
+  }
+
+  Future<void> _disconnectDevice() async {
+    if (connectedDevice != null) {
+      try {
+        await connectedDevice!.disconnect();
+      } catch (e) {
+        print("Error al desconectar: $e");
+      }
+    }
   }
 
   Future<void> _checkPermissions() async {
@@ -67,173 +96,185 @@ class _WifiESPState extends State<WifiESP> {
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
       Permission.locationWhenInUse,
+      Permission.location,
+      Permission.nearbyWifiDevices,
     ].request();
   }
 
-  Future<void> _startScan() async {
-    if (_isScanning) return;
+  Future<void> _markAsConfigured() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isConfigured', true);
+  }
+
+  void _startScan() async {
+    if (isScanning) return;
 
     setState(() {
-      _isScanning = true;
-      _devices.clear();
-      _connectionStatus = 'Buscando dispositivos...';
+      isScanning = true;
+      devices.clear();
     });
 
     FlutterBluePlus.scanResults.listen((results) {
       for (ScanResult result in results) {
-        if (!_devices.contains(result.device)) {
+        if (!devices.contains(result.device)) {
           setState(() {
-            _devices.add(result.device);
+            devices.add(result.device);
           });
         }
       }
     });
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
-    
-    setState(() {
-      _isScanning = false;
-      _connectionStatus = 'Escaneo completado';
-    });
+    try {
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 10),
+        androidUsesFineLocation: false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al escanear: $e")),
+      );
+    } finally {
+      setState(() => isScanning = false);
+    }
+  }
+
+  Future<void> _scanWifiNetworks() async {
+    if (isScanningWifi) return;
+
+    setState(() => isScanningWifi = true);
+
+    try {
+      final canScan = await WiFiScan.instance.canStartScan();
+      if (canScan != CanStartScan.yes) {
+        throw "No se puede escanear WiFi: $canScan";
+      }
+
+      final results = await WiFiScan.instance.getScannedResults();
+      setState(() => wifiNetworks = results);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al escanear WiFi: $e")),
+      );
+    } finally {
+      setState(() => isScanningWifi = false);
+    }
   }
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
-    setState(() {
-      _connectionStatus = 'Conectando...';
-    });
-
     try {
-      await device.connect(timeout: const Duration(seconds: 10));
-      
-      setState(() {
-        _connectedDevice = device;
-        _connectionStatus = 'Conectado a ${device.platformName}';
-      });
+      // Desconectar primero si hay una conexión previa
+      if (connectedDevice != null) {
+        await _disconnectDevice();
+      }
 
-      List<BluetoothService> services = await device.discoverServices();
+      // Conectar al dispositivo
+      await device.connect(autoConnect: false, timeout: const Duration(seconds: 15));
+      
+      // Pequeña pausa para estabilizar la conexión
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      setState(() => connectedDevice = device);
+
+      // Descubrir servicios
+      List<BluetoothService> services;
+      try {
+        services = await device.discoverServices();
+      } catch (e) {
+        throw "Error al descubrir servicios: $e";
+      }
+      
+      bool foundWriteChar = false;
+      bool foundNotifyChar = false;
 
       for (var service in services) {
-        if (service.uuid.toString().toLowerCase() == _targetServiceUUID.toLowerCase()) {
+        if (service.uuid.toString().toLowerCase() == targetServiceUUID.toLowerCase()) {
           for (var characteristic in service.characteristics) {
-            if (characteristic.uuid.toString().toLowerCase() == _targetCharacteristicUUID.toLowerCase()) {
-              setState(() {
-                _writeCharacteristic = characteristic;
-              });
+            // Característica de escritura
+            if (characteristic.uuid.toString().toLowerCase() == targetCharacteristicUUID.toLowerCase()) {
+              setState(() => writeCharacteristic = characteristic);
+              foundWriteChar = true;
             }
-            if (characteristic.uuid.toString().toLowerCase() == _notifyCharacteristicUUID.toLowerCase()) {
-              await characteristic.setNotifyValue(true);
-              characteristic.value.listen((value) {
-                _handleNotification(value);
-              });
-              setState(() {
-                _notifyCharacteristic = characteristic;
-              });
+            // Característica de notificación
+            if (characteristic.uuid.toString().toLowerCase() == notifyCharacteristicUUID.toLowerCase()) {
+              try {
+                await characteristic.setNotifyValue(true);
+                notificationSubscription?.cancel();
+                notificationSubscription = characteristic.onValueReceived.listen((value) {
+                  String message = String.fromCharCodes(value);
+                  if (message.contains("CONFIG_SUCCESS")) {
+                    _markAsConfigured();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => ReceiverConfiguredScreen()),
+                    );
+                  }
+                });
+                setState(() => notifyCharacteristic = characteristic);
+                foundNotifyChar = true;
+              } catch (e) {
+                print("Error al configurar notificaciones: $e");
+              }
             }
           }
         }
       }
 
-      if (_writeCharacteristic == null) {
-        setState(() {
-          _connectionStatus = 'Característica no encontrada';
-        });
+      if (!foundWriteChar || !foundNotifyChar) {
+        throw "No se encontraron todas las características necesarias";
       }
+
+      await _scanWifiNetworks();
     } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al conectar: $e")),
+      );
+      await device.disconnect();
       setState(() {
-        _connectionStatus = 'Error de conexión: $e';
+        connectedDevice = null;
+        writeCharacteristic = null;
+        notifyCharacteristic = null;
       });
     }
   }
 
-  void _handleNotification(List<int> value) {
-    final message = String.fromCharCodes(value);
-    
-    if (message.startsWith("CONFIG_SUCCESS:")) {
-      final ip = message.replaceFirst("CONFIG_SUCCESS:", "");
-      setState(() {
-        _wifiStatus = 'Configuración exitosa!';
-        _ipAddress = 'IP: $ip';
-      });
-      _saveConfiguredDevice(ip);
-    } else if (message == "CONFIG_FAILED") {
-      setState(() {
-        _wifiStatus = 'Error en la configuración WiFi';
-        _ipAddress = '';
-      });
-    }
-  }
+  Future<void> _sendWifiCredentials(String ssid, String password) async {
+    if (writeCharacteristic == null) return;
 
-  Future<void> _saveConfiguredDevice(String ipAddress) async {
-    if (_connectedDevice == null || _ssidController.text.isEmpty) return;
-
-    final device = ConfiguredDevice(
-      deviceId: _connectedDevice!.remoteId.toString(),
-      deviceName: _connectedDevice!.platformName.isEmpty 
-          ? 'ESP32' 
-          : _connectedDevice!.platformName,
-      ssid: _ssidController.text,
-      configuredAt: DateTime.now(),
-      ipAddress: ipAddress,
-    );
-
-    final prefs = await SharedPreferences.getInstance();
-    final devicesJson = prefs.getStringList('configured_devices') ?? [];
-    devicesJson.add(jsonEncode(device.toJson()));
-    await prefs.setStringList('configured_devices', devicesJson);
-    
-    setState(() {
-      _wifiStatus = 'Dispositivo guardado';
-    });
-  }
-
-  Future<void> _sendWifiCredentials() async {
-    if (_writeCharacteristic == null || _ssidController.text.isEmpty || _passwordController.text.isEmpty) return;
-
-    final credentials = 'WIFI:${_ssidController.text}:${_passwordController.text}';
-    
-    setState(() {
-      _wifiStatus = 'Enviando credenciales...';
-    });
-
+    final credentials = 'WIFI:$ssid:$password';
     try {
-      if (_writeCharacteristic!.properties.writeWithoutResponse) {
-        await _writeCharacteristic!.write(credentials.codeUnits, withoutResponse: true);
+      if (writeCharacteristic!.properties.writeWithoutResponse) {
+        await writeCharacteristic!.write(credentials.codeUnits, withoutResponse: true);
       } else {
-        await _writeCharacteristic!.write(credentials.codeUnits, withoutResponse: false);
+        await writeCharacteristic!.write(credentials.codeUnits, withoutResponse: false);
       }
-      
-      setState(() {
-        _wifiStatus = 'Credenciales enviadas';
-      });
     } catch (e) {
-      setState(() {
-        _wifiStatus = 'Error al enviar: $e';
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al enviar: $e")),
+      );
+      throw e;
     }
   }
 
-  void _showCredentialsDialog() {
+  void _showWifiCredentialsDialog(WiFiAccessPoint network) {
+    _ssidController.text = network.ssid;
+    _passwordController.clear();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Configurar WiFi'),
+        title: const Text('Enviar credenciales WiFi'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: _ssidController,
-              decoration: const InputDecoration(
-                labelText: 'SSID',
-                hintText: 'Nombre de la red WiFi',
-              ),
-            ),
+            Text('Red: ${network.ssid}'),
             const SizedBox(height: 16),
             TextField(
+              controller: _ssidController,
+              decoration: const InputDecoration(labelText: 'SSID'),
+            ),
+            TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Contraseña',
-                hintText: 'Mínimo 8 caracteres',
-              ),
+              decoration: const InputDecoration(labelText: 'Contraseña'),
               obscureText: true,
             ),
           ],
@@ -244,9 +285,21 @@ class _WifiESPState extends State<WifiESP> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
-              _sendWifiCredentials();
-              Navigator.pop(context);
+            onPressed: () async {
+              try {
+                await _sendWifiCredentials(
+                  _ssidController.text.trim(),
+                  _passwordController.text.trim(),
+                );
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Credenciales enviadas al ESP32")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error al enviar credenciales: $e")),
+                );
+              }
             },
             child: const Text('Enviar'),
           ),
@@ -259,84 +312,129 @@ class _WifiESPState extends State<WifiESP> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configuración WiFi ESP32'),
+        title: const Text('Configurar WiFi ESP32'),
         backgroundColor: const Color(0xffFFE4AF),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _startScan,
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Sección de conexión BLE
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Conexión ESP32',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(_connectionStatus),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _startScan,
-                      child: Text(_isScanning ? 'Escaneando...' : 'Buscar dispositivos'),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_devices.isNotEmpty)
-                      ..._devices.map((device) => ListTile(
-                        title: Text(device.platformName),
-                        subtitle: Text(device.remoteId.toString()),
-                        trailing: ElevatedButton(
-                          onPressed: () => _connectToDevice(device),
-                          child: const Text('Conectar'),
-                        ),
-                      )),
-                  ],
-                ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: _startScan,
+              child: Text(isScanning ? 'Escaneando...' : 'Buscar Dispositivos'),
+            ),
+          ),
+          if (connectedDevice != null) ...[
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                onPressed: _scanWifiNetworks,
+                child: Text(isScanningWifi ? 'Buscando redes...' : 'Escanear redes WiFi'),
               ),
             ),
-            
-            const SizedBox(height: 20),
-            
-            // Sección de configuración WiFi
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Configuración WiFi',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Expanded(
+              child: wifiNetworks.isEmpty
+                  ? const Center(child: Text("No se encontraron redes WiFi"))
+                  : ListView.builder(
+                      itemCount: wifiNetworks.length,
+                      itemBuilder: (context, index) {
+                        final network = wifiNetworks[index];
+                        return ListTile(
+                          leading: const Icon(Icons.wifi),
+                          title: Text(network.ssid),
+                          subtitle: Text("Señal: ${network.level} dBm"),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.send),
+                            onPressed: () => _showWifiCredentialsDialog(network),
+                          ),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 10),
-                    Text(_wifiStatus),
-                    if (_ipAddress.isNotEmpty)
-                      Text(_ipAddress),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _connectedDevice != null ? _showCredentialsDialog : null,
-                      child: const Text('Configurar WiFi'),
+            ),
+          ] else ...[
+            Expanded(
+              child: ListView.builder(
+                itemCount: devices.length,
+                itemBuilder: (context, index) {
+                  final device = devices[index];
+                  return ListTile(
+                    leading: const Icon(Icons.bluetooth),
+                    title: Text(device.platformName.isEmpty ? 'Dispositivo Desconocido' : device.platformName),
+                    subtitle: Text(device.remoteId.toString()),
+                    trailing: ElevatedButton(
+                      onPressed: () => _connectToDevice(device),
+                      child: const Text("Conectar"),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
-        ),
+        ],
       ),
+    );
+  }
+}
+
+class ReceiverConfiguredScreen extends StatelessWidget {
+  const ReceiverConfiguredScreen({super.key});
+
+  Future<void> _resetConfiguration(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isConfigured', false);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => ESPScreen()),
     );
   }
 
   @override
-  void dispose() {
-    _ssidController.dispose();
-    _passwordController.dispose();
-    if (_connectedDevice != null) {
-      _connectedDevice!.disconnect();
-    }
-    super.dispose();
-  }
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Configuración Completa'),
+        backgroundColor: const Color(0xffFFE4AF),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle, size: 100, color: Colors.green),
+            const SizedBox(height: 20),
+            const Text(
+              'Tu receptor está configurado',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'El dispositivo ESP32 está conectado correctamente a la red WiFi',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              ),
+              onPressed: () => _resetConfiguration(context),
+              child: const Text(
+                'Cambiar Configuración',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+     ),
+);
+}
 }
