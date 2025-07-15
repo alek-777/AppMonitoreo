@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/AddSectorScreen.dart';
 import 'package:flutter_application_2/ArbolesScreen.dart';
 import 'package:flutter_application_2/ConfiguracionSector.dart';
 import 'package:flutter_application_2/ESPScreen.dart';
@@ -34,12 +35,13 @@ class MyApp extends StatelessWidget {
         '/esp': (context) => const ESPScreen(),
         '/usuario': (context) => const UsuarioScreen(),
         '/reportes' :(context)=> const ReportesScreen(),
-        '/sensores' :(context)=> const SensoresScreen(),
+        '/sectores' :(context)=> const SectoresScreen(),
         '/configuracion' :(context)=> const ConfiguracionSector(),
         '/arboles': (context)=> const ArbolesScreen(),
         '/register': (context)=> const RegisterESP(),
         '/wifi': (context)=> const WifiESP(),
-        '/lista': (context)=> const ListaESP()
+        '/lista': (context)=> const ListaESP(),
+        '/add_sector':  (context)=> const AddSectorScreen(),
       },
     );
   }

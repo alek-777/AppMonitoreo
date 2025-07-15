@@ -22,11 +22,11 @@ class RiegoScreen extends StatelessWidget {
           children: [
             _buildMenuOption(
               context: context,
-              title: 'Sensores',
+              title: 'Sectores',
               leading: Image.asset("image/riego.png", width: 80, height: 80),
               onTap: () {
                 // Navegar a pantalla de sensores
-                Navigator.pushNamed(context, '/sensores');
+                Navigator.pushNamed(context, '/sectores');
               },
             ),
             const SizedBox(height: 16),
