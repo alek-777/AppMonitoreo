@@ -1,42 +1,33 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/ESPScreen.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wifi_scan/wifi_scan.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-void main() {
-  runApp(
-    MaterialApp(
-      title: 'Configurador ESP32',
-      theme: ThemeData(primarySwatch: Colors.amber),
-      home: FutureBuilder<bool>(
-        future: _checkIfConfigured(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return snapshot.data == true 
-                ? ReceiverConfiguredScreen()
-                : ESPScreen();
-          }
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
-        },
-      ),
-    ),
-  );
-}
 
 Future<bool> _checkIfConfigured() async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getBool('isConfigured') ?? false;
 }
 
-class ESPScreen extends StatelessWidget {
-  const ESPScreen({super.key});
+class WifiESP extends StatelessWidget {
+  const WifiESP({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: BluetoothScannerScreen(),
+    return Scaffold(
+      body: FutureBuilder<bool>(
+        future: _checkIfConfigured(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return snapshot.data == true
+                ? ReceiverConfiguredScreen()
+                : BluetoothScannerScreen();
+          }
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        },
+      ),
     );
   }
 }
@@ -57,10 +48,12 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
   BluetoothDevice? connectedDevice;
   BluetoothCharacteristic? writeCharacteristic;
   BluetoothCharacteristic? notifyCharacteristic;
-  
+
   final String targetServiceUUID = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E';
-  final String targetCharacteristicUUID = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E';
-  final String notifyCharacteristicUUID = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E';
+  final String targetCharacteristicUUID =
+      '6E400002-B5A3-F393-E0A9-E50E24DCCA9E';
+  final String notifyCharacteristicUUID =
+      '6E400003-B5A3-F393-E0A9-E50E24DCCA9E';
 
   final TextEditingController _ssidController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -130,9 +123,9 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
         androidUsesFineLocation: false,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al escanear: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al escanear: $e")));
     } finally {
       setState(() => isScanning = false);
     }
@@ -152,9 +145,9 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
       final results = await WiFiScan.instance.getScannedResults();
       setState(() => wifiNetworks = results);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al escanear WiFi: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al escanear WiFi: $e")));
     } finally {
       setState(() => isScanningWifi = false);
     }
@@ -168,8 +161,11 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
       }
 
       // Conectar al dispositivo
-      await device.connect(autoConnect: false, timeout: const Duration(seconds: 15));
-      
+      await device.connect(
+        autoConnect: false,
+        timeout: const Duration(seconds: 15),
+      );
+
       // Pequeña pausa para estabilizar la conexión
       await Future.delayed(const Duration(milliseconds: 500));
 
@@ -182,33 +178,39 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
       } catch (e) {
         throw "Error al descubrir servicios: $e";
       }
-      
+
       bool foundWriteChar = false;
       bool foundNotifyChar = false;
 
       for (var service in services) {
-        if (service.uuid.toString().toLowerCase() == targetServiceUUID.toLowerCase()) {
+        if (service.uuid.toString().toLowerCase() ==
+            targetServiceUUID.toLowerCase()) {
           for (var characteristic in service.characteristics) {
             // Característica de escritura
-            if (characteristic.uuid.toString().toLowerCase() == targetCharacteristicUUID.toLowerCase()) {
+            if (characteristic.uuid.toString().toLowerCase() ==
+                targetCharacteristicUUID.toLowerCase()) {
               setState(() => writeCharacteristic = characteristic);
               foundWriteChar = true;
             }
             // Característica de notificación
-            if (characteristic.uuid.toString().toLowerCase() == notifyCharacteristicUUID.toLowerCase()) {
+            if (characteristic.uuid.toString().toLowerCase() ==
+                notifyCharacteristicUUID.toLowerCase()) {
               try {
                 await characteristic.setNotifyValue(true);
                 notificationSubscription?.cancel();
-                notificationSubscription = characteristic.onValueReceived.listen((value) {
-                  String message = String.fromCharCodes(value);
-                  if (message.contains("CONFIG_SUCCESS")) {
-                    _markAsConfigured();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ReceiverConfiguredScreen()),
-                    );
-                  }
-                });
+                notificationSubscription = characteristic.onValueReceived
+                    .listen((value) {
+                      String message = String.fromCharCodes(value);
+                      if (message.contains("CONFIG_SUCCESS")) {
+                        _markAsConfigured();
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ReceiverConfiguredScreen(),
+                          ),
+                        );
+                      }
+                    });
                 setState(() => notifyCharacteristic = characteristic);
                 foundNotifyChar = true;
               } catch (e) {
@@ -225,9 +227,9 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
 
       await _scanWifiNetworks();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al conectar: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al conectar: $e")));
       await device.disconnect();
       setState(() {
         connectedDevice = null;
@@ -243,14 +245,20 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
     final credentials = 'WIFI:$ssid:$password';
     try {
       if (writeCharacteristic!.properties.writeWithoutResponse) {
-        await writeCharacteristic!.write(credentials.codeUnits, withoutResponse: true);
+        await writeCharacteristic!.write(
+          credentials.codeUnits,
+          withoutResponse: true,
+        );
       } else {
-        await writeCharacteristic!.write(credentials.codeUnits, withoutResponse: false);
+        await writeCharacteristic!.write(
+          credentials.codeUnits,
+          withoutResponse: false,
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al enviar: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al enviar: $e")));
       throw e;
     }
   }
@@ -293,7 +301,9 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
                 );
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Credenciales enviadas al ESP32")),
+                  const SnackBar(
+                    content: Text("Credenciales enviadas al ESP32"),
+                  ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -315,10 +325,7 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
         title: const Text('Configurar WiFi ESP32'),
         backgroundColor: const Color(0xffFFE4AF),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _startScan,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _startScan),
         ],
       ),
       body: Column(
@@ -335,7 +342,9 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton(
                 onPressed: _scanWifiNetworks,
-                child: Text(isScanningWifi ? 'Buscando redes...' : 'Escanear redes WiFi'),
+                child: Text(
+                  isScanningWifi ? 'Buscando redes...' : 'Escanear redes WiFi',
+                ),
               ),
             ),
             Expanded(
@@ -351,7 +360,8 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
                           subtitle: Text("Señal: ${network.level} dBm"),
                           trailing: IconButton(
                             icon: const Icon(Icons.send),
-                            onPressed: () => _showWifiCredentialsDialog(network),
+                            onPressed: () =>
+                                _showWifiCredentialsDialog(network),
                           ),
                         );
                       },
@@ -365,7 +375,11 @@ class _BluetoothScannerScreenState extends State<BluetoothScannerScreen> {
                   final device = devices[index];
                   return ListTile(
                     leading: const Icon(Icons.bluetooth),
-                    title: Text(device.platformName.isEmpty ? 'Dispositivo Desconocido' : device.platformName),
+                    title: Text(
+                      device.platformName.isEmpty
+                          ? 'Dispositivo Desconocido'
+                          : device.platformName,
+                    ),
                     subtitle: Text(device.remoteId.toString()),
                     trailing: ElevatedButton(
                       onPressed: () => _connectToDevice(device),
@@ -424,7 +438,10 @@ class ReceiverConfiguredScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 15,
+                ),
               ),
               onPressed: () => _resetConfiguration(context),
               child: const Text(
@@ -434,7 +451,7 @@ class ReceiverConfiguredScreen extends StatelessWidget {
             ),
           ],
         ),
-     ),
-);
-}
+      ),
+    );
+  }
 }

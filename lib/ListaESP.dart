@@ -14,7 +14,6 @@ class ListaESP extends StatefulWidget {
 class _ListaESPState extends State<ListaESP> {
   List<Map<String, dynamic>> _devices = [];
   bool _isLoading = true;
-  final FlutterBluePlus _ble = FlutterBluePlus.instance;
   BluetoothDevice? _deviceToReset;
 
   // UUIDs del servicio BLE (deben coincidir con tu firmware ESP32)
@@ -129,7 +128,7 @@ class _ListaESPState extends State<ListaESP> {
         content: SizedBox(
           width: double.maxFinite,
           child: StreamBuilder<List<ScanResult>>(
-            stream: _ble.scanResults,
+            stream: FlutterBluePlus.scanResults,
             builder: (c, snapshot) {
               if (snapshot.hasError) {
                 return Text('Error: ${snapshot.error}');
