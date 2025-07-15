@@ -1,18 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-class SensoresScreen extends StatelessWidget {
-  const SensoresScreen({super.key});
+class SectoresScreen extends StatefulWidget {
+  const SectoresScreen({super.key});
 
+  @override
+  State<SectoresScreen> createState() => _SectoresScreenState();
+}
+
+class _SectoresScreenState extends State<SectoresScreen> {
   Future<List<Map<String, dynamic>>> fetchData() async {
-    final response = await http.get(Uri.parse('https://monitoreo-railway-ues-production.up.railway.app/api/sensores'));
+    final response = await http.get(
+      Uri.parse(
+        //POR HACER: QUE EL ID SE RECUPERE AUTOMÁTICAMENTE
+        'https://monitoreo-railway-ues-production.up.railway.app/api/sectors/company/1',
+      ),
+    );
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.cast<Map<String, dynamic>>();
     } else {
       throw Exception('Error al cargar los datos');
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -26,6 +42,15 @@ class SensoresScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/add_sector');
+              setState(() {}); // Esto fuerza a recargar el FutureBuilder
+            },
+            icon: const Icon(Icons.add),
+          ),
+        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchData(),
@@ -41,18 +66,15 @@ class SensoresScreen extends StatelessWidget {
           // Combinar todos los sectores de todos los objetos
           final List<Widget> sensorCards = [];
 
-          for (var item in snapshot.data!) {
-            item.forEach((sectorKey, sectorData) {
-              sensorCards.add(
-                _buildSensorCard(
-                  sectorKey.toUpperCase(),
-                  sectorData['humedad'],
-                  sectorData['temperatura'],
-                  context,
-                ),
-              );
-              sensorCards.add(const SizedBox(height: 12));
-            });
+          for (var sector in snapshot.data!) {
+            sensorCards.add(
+              _buildSensorCard(
+                sector['nameSector'] ?? 'Sin nombre',
+                '30%', // Puedes cambiar por datos reales cuando los tengas
+                '28°',
+                context,
+              ),
+            );
           }
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -97,39 +119,35 @@ class SensoresScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Image.asset('image/riego.png', width: 60, height: 60),
-              FittedBox(
-                fit: BoxFit.contain,
-                child: Column(
-                  children: [
-                    Text(
-                      sector,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+              Column(
+                children: [
+                  Text(
+                    sector,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      _buildIndicator(
+                        'Humedad',
+                        humedad,
+                        Icons.water_drop,
+                        Colors.blue,
                       ),
-                    ),
-                    Row(
-                      children: [
-                        _buildIndicator(
-                          'Humedad    ',
-                          humedad,
-                          Icons.water_drop,
-                          Colors.blue,
-                        ),
-                        _buildIndicator(
-                          'Temperatura',
-                          temperatura,
-                          Icons.thermostat,
-                          Colors.red,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      _buildIndicator(
+                        'Temperatura',
+                        temperatura,
+                        Icons.thermostat,
+                        Colors.red,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -150,7 +168,7 @@ class SensoresScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(8.0),
-      margin: const EdgeInsets.only(right: 8.0), // para separación
+      margin: const EdgeInsets.only(right: 8.0),
       child: Row(
         children: [
           Icon(icon, color: color),
