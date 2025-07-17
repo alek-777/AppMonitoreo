@@ -4,6 +4,7 @@ import 'package:flutter_application_2/Sectores/ArbolesScreen.dart';
 import 'package:flutter_application_2/Sectores/ConfiguracionSector.dart';
 import 'package:flutter_application_2/ESP/ESPScreen.dart';
 import 'package:flutter_application_2/RiegoScreen.dart';
+import 'package:flutter_application_2/Sectores/EditSectorScreen.dart';
 import 'package:flutter_application_2/UsuarioScreen.dart';
 import 'package:flutter_application_2/ReportesScreen.dart';
 import 'package:flutter_application_2/Sectores/SectoresScreen.dart';
@@ -42,6 +43,7 @@ class MyApp extends StatelessWidget {
         '/wifi': (context)=> const WifiESP(),
         '/lista': (context)=> const ListaESP(),
         '/add_sector':  (context)=> const AddSectorScreen(),
+        '/edit_sector': (context)=> const EditSectorScreen()
       },
     );
   }
