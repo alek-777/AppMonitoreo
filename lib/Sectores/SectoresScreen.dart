@@ -26,6 +26,19 @@ class _SectoresScreenState extends State<SectoresScreen> {
     }
   }
 
+  void deleteSector(int id) async {
+    final response = await http.delete(
+      Uri.parse(
+        'https://monitoreo-railway-ues-production.up.railway.app/api/sectors/$id',
+      ),
+    );
+
+    if (response.statusCode == 200) {
+    } else {
+      throw Exception('Error al borrar los datos');
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -69,6 +82,8 @@ class _SectoresScreenState extends State<SectoresScreen> {
           for (var sector in snapshot.data!) {
             sensorCards.add(
               _buildSensorCard(
+                sector['description'],
+                sector['idSector'],
                 sector['nameSector'] ?? 'Sin nombre',
                 '30%', // Puedes cambiar por datos reales cuando los tengas
                 '28°',
@@ -96,6 +111,8 @@ class _SectoresScreenState extends State<SectoresScreen> {
   }
 
   Widget _buildSensorCard(
+    String description,
+    int idSector,
     String sector,
     String humedad,
     String temperatura,
@@ -146,6 +163,62 @@ class _SectoresScreenState extends State<SectoresScreen> {
                         Colors.red,
                       ),
                     ],
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      setState(() {});
+                      Navigator.pushNamed(
+                        context,
+                        '/edit_sector',
+                        arguments: {
+                          'nombre': sector,
+                          'idSector': idSector.toString(),
+                          'description': description,
+                        },
+                      );
+                    },
+                    icon: Icon(Icons.edit),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false, // user must tap button!
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Alerta de eliminar'),
+                            content: const SingleChildScrollView(
+                              child: ListBody(
+                                children: <Widget>[
+                                  Text('¿Esta seguro de eliminar este sector?'),
+                                ],
+                              ),
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('Si'),
+                                onPressed: () {
+                                  deleteSector(idSector);
+                                  setState(() {});
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: const Text('No'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    icon: Icon(Icons.delete, color: Colors.red),
                   ),
                 ],
               ),
