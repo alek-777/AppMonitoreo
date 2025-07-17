@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -65,52 +68,69 @@ class _RegisterESPState extends State<RegisterESP> {
   }
 
   Future<void> _registrarESP() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_sector != _confirmacionSector) {
-      setState(() => _errorMessage = 'Los números de sector no coinciden');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-      _successMessage = '';
-    });
-
-    try {
-      final respuesta = await http.post(
-        Uri.parse('$_apiUrl/esps'), // Ajusta la ruta exacta
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'etiqueta': _etiqueta,
-          'mac': _mac,
-          'sector': _sector,
-        }),
-      );
-
-      final datosRespuesta = jsonDecode(respuesta.body);
-
-      if (respuesta.statusCode == 201) {
-        setState(() {
-          _successMessage = 'ESP registrado exitosamente!';
-          _etiqueta = '';
-          _mac = '';
-          _sector = 0;
-          _confirmacionSector = 0;
-          _macController.clear();
-        });
-        _formKey.currentState!.reset();
-      } else {
-        setState(() {
-          _errorMessage = datosRespuesta['message'] ?? 'Error al registrar ESP';
-        });
-      }
-    } catch (e) {
-      setState(() => _errorMessage = 'Error de conexión: ${e.toString()}');
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  if (!_formKey.currentState!.validate()) return;
+  if (_sector != _confirmacionSector) {
+    setState(() => _errorMessage = 'Los números de sector no coinciden');
+    return;
   }
+
+  setState(() {
+    _isLoading = true;
+    _errorMessage = '';
+    _successMessage = '';
+  });
+
+  try {
+    final respuesta = await http.post(
+      Uri.parse('https://monitoreo-railway-ues-production.up.railway.app/api/sensors'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'etiqueta': _etiqueta,
+        'mac': _mac,
+        'sector': _sector,
+      }),
+    ).timeout(const Duration(seconds: 10));
+
+    if (respuesta.statusCode == 201) {
+      setState(() {
+        _successMessage = 'ESP registrado exitosamente!';
+        _resetCampos();
+      });
+    } else {
+      _manejarErrorRespuesta(respuesta);
+    }
+  } on TimeoutException {
+    setState(() => _errorMessage = 'Tiempo de espera agotado. Intente nuevamente');
+  } on SocketException {
+    setState(() => _errorMessage = 'Error de conexión. Verifique su internet');
+  } catch (e) {
+    setState(() => _errorMessage = 'Error: ${e.toString()}');
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
+void _resetCampos() {
+  _etiqueta = '';
+  _mac = '';
+  _sector = 0;
+  _confirmacionSector = 0;
+  _macController.clear();
+  _formKey.currentState?.reset();
+}
+
+void _manejarErrorRespuesta(http.Response respuesta) {
+  try {
+    final errorData = jsonDecode(respuesta.body);
+    setState(() {
+      _errorMessage = errorData['message'] ?? 'Error al registrar ESP (Código ${respuesta.statusCode})';
+    });
+  } catch (e) {
+    setState(() {
+      _errorMessage = 'Error ${respuesta.statusCode}: ${respuesta.body}';
+    });
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +149,7 @@ class _RegisterESPState extends State<RegisterESP> {
               // Campo Etiqueta/Nombre
               TextFormField(
                 decoration: const InputDecoration(
-                  labelText: 'Etiqueta/Nombre del ESP',
+                  labelText: 'Etiqueta del ESP',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.label),
                 ),
