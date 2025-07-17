@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_2/AddSectorScreen.dart';
-import 'package:flutter_application_2/ArbolesScreen.dart';
-import 'package:flutter_application_2/ConfiguracionSector.dart';
-import 'package:flutter_application_2/ESPScreen.dart';
+import 'package:flutter_application_2/Sectores/AddSectorScreen.dart';
+import 'package:flutter_application_2/Sectores/ArbolesScreen.dart';
+import 'package:flutter_application_2/Sectores/ConfiguracionSector.dart';
+import 'package:flutter_application_2/ESP/ESPScreen.dart';
 import 'package:flutter_application_2/RiegoScreen.dart';
 import 'package:flutter_application_2/UsuarioScreen.dart';
 import 'package:flutter_application_2/ReportesScreen.dart';
-import 'package:flutter_application_2/SectoresScreen.dart';
-import 'package:flutter_application_2/WifiESP.dart';
-import 'package:flutter_application_2/RegisterESP.dart';
-import 'package:flutter_application_2/ListaESP.dart';
+import 'package:flutter_application_2/Sectores/SectoresScreen.dart';
+import 'package:flutter_application_2/ESP/WifiESP.dart';
+import 'package:flutter_application_2/ESP/RegisterESP.dart';
+import 'package:flutter_application_2/ESP/ListaESP.dart';
 
 
 
