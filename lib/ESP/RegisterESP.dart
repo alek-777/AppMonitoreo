@@ -85,9 +85,9 @@ class _RegisterESPState extends State<RegisterESP> {
       Uri.parse('https://monitoreo-railway-ues-production.up.railway.app/api/sensors'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'etiqueta': _etiqueta,
+        'tag': _etiqueta,
         'mac': _mac,
-        'sector': _sector,
+        'idSector': _sector,
       }),
     ).timeout(const Duration(seconds: 10));
 
