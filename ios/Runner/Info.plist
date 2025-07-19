@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Flutter Application 2</string>
+	<string>DrewSite</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -28,6 +28,14 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- Permisos agregados -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Esta app necesita acceder a tu ubicación mientras la usas.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Esta app necesita acceder a tu ubicación incluso cuando no está en uso.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Esta app necesita acceso a Bluetooth para conectar con dispositivos cercanos.</string>
+	<!-- Permisos agregados -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
