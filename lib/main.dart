@@ -11,6 +11,7 @@ import 'package:flutter_application_2/Sectores/SectoresScreen.dart';
 import 'package:flutter_application_2/ESP/WifiESP.dart';
 import 'package:flutter_application_2/ESP/RegisterESP.dart';
 import 'package:flutter_application_2/ESP/ListaESP.dart';
+import 'package:flutter_application_2/log-reg/presentation/screens/login_screen.dart';
 
 
 
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: const MenuScreen(),
+      home: const LoginScreen(),
       routes: {
         '/riego': (context) => const RiegoScreen(),
         '/esp': (context) => const ESPScreen(),
