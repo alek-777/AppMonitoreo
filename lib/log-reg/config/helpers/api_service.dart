@@ -4,7 +4,7 @@ import 'package:flutter_application_2/log-reg/infrastructure/models/user_model.d
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000/api';
+  static const String baseUrl = 'https://monitoreo-railway-ues-production.up.railway.app/api';
 
   // REGISTRO DE USUARIO
   static Future<Map<String, dynamic>> registerUser(UserModel user) async {
