@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class AddSectorScreen extends StatefulWidget {
   const AddSectorScreen({super.key});
 
@@ -15,6 +17,25 @@ class _AddSectorScreen extends State<AddSectorScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  String _idCompany = "";
+
+  
+
+  @override
+  void initState() {
+    super.initState();
+    _getIdCompany();
+  }
+
+  Future<void> _getIdCompany() async {
+    final prefs = await SharedPreferences.getInstance();
+    final idCompany = prefs.getInt('idCompany') ?? 'Compañia no encontrada';
+    setState(() {
+      _idCompany = idCompany.toString();
+    });
+    print(_idCompany);
+  }
+
   Future<void> createSector(String nameSector, String description) async {
     final response = await http.post(
       Uri.parse(
@@ -24,8 +45,7 @@ class _AddSectorScreen extends State<AddSectorScreen> {
       body: jsonEncode({
         'nameSector': nameSector,
         'description': description,
-        //POR HACER: QUE EL ID DE LA COMPAÑIA SE RECUPERE AUTOMÁTICAMENTE
-        'idCompany': 1,
+        'idCompany': int.tryParse(_idCompany),
       }),
     );
 
