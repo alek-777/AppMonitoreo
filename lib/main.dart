@@ -44,7 +44,8 @@ class MyApp extends StatelessWidget {
         '/wifi': (context)=> const WifiESP(),
         '/lista': (context)=> const ListaESP(),
         '/add_sector':  (context)=> const AddSectorScreen(),
-        '/edit_sector': (context)=> const EditSectorScreen()
+        '/edit_sector': (context)=> const EditSectorScreen(),
+        '/login': (context)=> const LoginScreen(),
       },
     );
   }
@@ -63,8 +64,8 @@ class MenuScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
+          scrollDirection: Axis.vertical,
           children: [
             const SizedBox(height: 20),
             _buildMenuOption(

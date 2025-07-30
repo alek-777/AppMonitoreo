@@ -249,9 +249,12 @@ class _SectoresScreenState extends State<SectoresScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              Visibility(
+                visible: MediaQuery.of(context).size.width >= 411,
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 10, color: Colors.grey[600], overflow: TextOverflow.ellipsis),
+                ),
               ),
               Text(
                 value,
