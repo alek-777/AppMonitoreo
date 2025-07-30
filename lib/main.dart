@@ -61,6 +61,7 @@ class MenuScreen extends StatelessWidget {
         title: const Text('Menú'),
         centerTitle: true,
         backgroundColor: Color(0xffFFE4AF),
+        
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

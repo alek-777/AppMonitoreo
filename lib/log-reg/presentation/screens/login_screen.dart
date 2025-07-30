@@ -52,7 +52,7 @@ class LoginScreenState extends State<LoginScreen> {
       await prefs.setInt('idCompany', idCompany);
 
 
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => MenuScreen(),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SectoresScreen extends StatefulWidget {
   const SectoresScreen({super.key});
@@ -11,11 +12,26 @@ class SectoresScreen extends StatefulWidget {
 }
 
 class _SectoresScreenState extends State<SectoresScreen> {
-  Future<List<Map<String, dynamic>>> fetchData() async {
+  String _idCompany = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _getIdCompany();
+  }
+
+  Future<void> _getIdCompany() async {
+    final prefs = await SharedPreferences.getInstance();
+    final idCompany = prefs.getInt('idCompany') ?? 'Compañia no encontrada';
+    setState(() {
+      _idCompany = idCompany.toString();
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> fetchData(String id) async {
     final response = await http.get(
       Uri.parse(
-        //POR HACER: QUE EL ID SE RECUPERE AUTOMÁTICAMENTE
-        'https://monitoreo-railway-ues-production.up.railway.app/api/sectors/company/1',
+        'https://monitoreo-railway-ues-production.up.railway.app/api/sectors/company/$id',
       ),
     );
     if (response.statusCode == 200) {
@@ -66,7 +82,7 @@ class _SectoresScreenState extends State<SectoresScreen> {
         ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: fetchData(),
+        future: fetchData(_idCompany),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
