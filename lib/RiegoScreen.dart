@@ -17,8 +17,8 @@ class RiegoScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
+          scrollDirection: Axis.vertical,
           children: [
             _buildMenuOption(
               context: context,

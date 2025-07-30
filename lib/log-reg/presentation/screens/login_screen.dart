@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_2/log-reg/config/helpers/api_service.dart';
 import 'package:flutter_application_2/log-reg/infrastructure/models/user_model.dart';
 import 'package:flutter_application_2/log-reg/presentation/screens/register_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_2/main.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -40,6 +41,17 @@ class LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (result['success']) {
+      final userData = result['data']['userFound'];
+      final username = userData['username'];
+      final idUser = userData['idUser'];
+      final idCompany = userData['company']['idCompany'];
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('username', username);
+      await prefs.setInt('idUser', idUser);
+      await prefs.setInt('idCompany', idCompany);
+
+
       Navigator.push(
         context,
         MaterialPageRoute(
