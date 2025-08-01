@@ -55,6 +55,52 @@ class _SectoresScreenState extends State<SectoresScreen> {
     }
   }
 
+  //PROMEDIOS
+  Future<Map<int, double>> fetchAverageHumidityBySector() async {
+    final response = await http.get(
+      Uri.parse(
+        'https://monitoreo-railway-ues-production.up.railway.app/api/data',
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body);
+
+      // Mapeo de sectorId a lista de humedades
+      Map<int, List<double>> humedadPorSector = {};
+
+      for (var item in jsonData) {
+        int sectorId = item['sensor']['sector']['idSector'];
+        String rawData = item['data'];
+        List<dynamic> sensores = json.decode(rawData);
+
+        for (var sensor in sensores) {
+          String humedadStr = sensor['humedad'] ?? '0.0%';
+          double humedad =
+              double.tryParse(humedadStr.replaceAll('%', '')) ?? 0.0;
+
+          if (!humedadPorSector.containsKey(sectorId)) {
+            humedadPorSector[sectorId] = [];
+          }
+          humedadPorSector[sectorId]!.add(humedad);
+        }
+      }
+
+      // Calcular promedios
+      Map<int, double> promedios = {};
+      humedadPorSector.forEach((sectorId, humedades) {
+        if (humedades.isNotEmpty) {
+          final promedio = humedades.reduce((a, b) => a + b) / humedades.length;
+          promedios[sectorId] = promedio;
+        }
+      });
+
+      return promedios;
+    } else {
+      throw Exception('Error al cargar datos de humedad');
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -81,38 +127,40 @@ class _SectoresScreenState extends State<SectoresScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: fetchData(_idCompany),
+      body: FutureBuilder<List<dynamic>>(
+        future: Future.wait([
+          fetchData(_idCompany),
+          fetchAverageHumidityBySector(),
+        ]),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          } else if (!snapshot.hasData || snapshot.data![0].isEmpty) {
             return const Center(child: Text('No hay datos disponibles'));
           }
 
-          // Combinar todos los sectores de todos los objetos
-          final List<Widget> sensorCards = [];
+          final sectores = snapshot.data![0] as List<Map<String, dynamic>>;
+          final promedios = snapshot.data![1] as Map<int, double>;
 
-          for (var sector in snapshot.data!) {
-            sensorCards.add(
-              _buildSensorCard(
-                sector['description'],
-                sector['idSector'],
-                sector['nameSector'] ?? 'Sin nombre',
-                '30%', // Puedes cambiar por datos reales cuando los tengas
-                '28°',
-                context,
-              ),
+          final List<Widget> sensorCards = sectores.map((sector) {
+            final idSector = sector['idSector'];
+            final humedadProm = promedios[idSector]?.toStringAsFixed(1) ?? '—';
+
+            return _buildSensorCard(
+              sector['description'],
+              idSector,
+              sector['nameSector'] ?? 'Sin nombre',
+              '$humedadProm%',
+              '—', // Temperatura no disponible
+              context,
             );
-          }
+          }).toList();
+
           return Padding(
             padding: const EdgeInsets.all(16.0),
-            child: ListView(
-              scrollDirection: Axis.vertical,
-              children: sensorCards,
-            ),
+            child: ListView(children: sensorCards),
           );
         },
       ),
@@ -143,6 +191,7 @@ class _SectoresScreenState extends State<SectoresScreen> {
             'sector': sector,
             'humedad': humedad,
             'temperatura': temperatura,
+            'idSector': idSector.toString(),
           },
         );
       },
@@ -269,7 +318,11 @@ class _SectoresScreenState extends State<SectoresScreen> {
                 visible: MediaQuery.of(context).size.width >= 411,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600], overflow: TextOverflow.ellipsis),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
               Text(
