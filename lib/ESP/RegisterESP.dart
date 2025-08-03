@@ -16,7 +16,7 @@ class RegisterESP extends StatefulWidget {
 
 class _RegisterESPState extends State<RegisterESP> {
   final _formKey = GlobalKey<FormState>();
-  final _apiUrl = 'https://monitoreo-railway-ues-production.up.railway.app/api/sensors';
+  // final _apiUrl = 'https://monitoreo-railway-ues-production.up.railway.app/api/sensors';
   final TextEditingController _macController = TextEditingController();
 
   // Campos del formulario
@@ -29,6 +29,7 @@ class _RegisterESPState extends State<RegisterESP> {
   String _successMessage = '';
   bool _isScanning = false;
   List<BluetoothDevice> _dispositivos = [];
+  String? _tipoESP;
 
   @override
   void initState() {
@@ -68,69 +69,84 @@ class _RegisterESPState extends State<RegisterESP> {
   }
 
   Future<void> _registrarESP() async {
-  if (!_formKey.currentState!.validate()) return;
-  if (_sector != _confirmacionSector) {
-    setState(() => _errorMessage = 'Los números de sector no coinciden');
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-    _errorMessage = '';
-    _successMessage = '';
-  });
-
-  try {
-    final respuesta = await http.post(
-      Uri.parse('https://monitoreo-railway-ues-production.up.railway.app/api/sensors'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'tag': _etiqueta,
-        'mac': _mac,
-        'idSector': _sector,
-      }),
-    ).timeout(const Duration(seconds: 10));
-
-    if (respuesta.statusCode == 201) {
-      setState(() {
-        _successMessage = 'ESP registrado exitosamente!';
-        _resetCampos();
-      });
-    } else {
-      _manejarErrorRespuesta(respuesta);
+    if (!_formKey.currentState!.validate()) return;
+    if (_sector != _confirmacionSector) {
+      setState(() => _errorMessage = 'Los números de sector no coinciden');
+      return;
     }
-  } on TimeoutException {
-    setState(() => _errorMessage = 'Tiempo de espera agotado. Intente nuevamente');
-  } on SocketException {
-    setState(() => _errorMessage = 'Error de conexión. Verifique su internet');
-  } catch (e) {
-    setState(() => _errorMessage = 'Error: ${e.toString()}');
-  } finally {
-    setState(() => _isLoading = false);
-  }
-}
+    if (_tipoESP == null) {
+      setState(() => _errorMessage = 'Seleccione el tipo de ESP');
+      return;
+    }
 
-void _resetCampos() {
-  _etiqueta = '';
-  _mac = '';
-  _sector = 0;
-  _confirmacionSector = 0;
-  _macController.clear();
-  _formKey.currentState?.reset();
-}
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+      _successMessage = '';
+    });
 
-void _manejarErrorRespuesta(http.Response respuesta) {
-  try {
-    final errorData = jsonDecode(respuesta.body);
-    setState(() {
-      _errorMessage = errorData['message'] ?? 'Error al registrar ESP (Código ${respuesta.statusCode})';
-    });
-  } catch (e) {
-    setState(() {
-      _errorMessage = 'Error ${respuesta.statusCode}: ${respuesta.body}';
-    });
+    try {
+      final respuesta = await http
+          .post(
+            Uri.parse(
+              'https://monitoreo-railway-ues-production.up.railway.app/api/sensors',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'tag': _etiqueta,
+              'mac': _mac,
+              'espType': _tipoESP,
+              'idSector': _sector,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (respuesta.statusCode == 201) {
+        setState(() {
+          _successMessage = 'ESP registrado exitosamente!';
+          _resetCampos();
+        });
+      } else {
+        _manejarErrorRespuesta(respuesta);
+      }
+    } on TimeoutException {
+      setState(
+        () => _errorMessage = 'Tiempo de espera agotado. Intente nuevamente',
+      );
+    } on SocketException {
+      setState(
+        () => _errorMessage = 'Error de conexión. Verifique su internet',
+      );
+    } catch (e) {
+      setState(() => _errorMessage = 'Error: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
-}
+
+  void _resetCampos() {
+    _etiqueta = '';
+    _mac = '';
+    _sector = 0;
+    _confirmacionSector = 0;
+    _macController.clear();
+    _formKey.currentState?.reset();
+  }
+
+  void _manejarErrorRespuesta(http.Response respuesta) {
+    try {
+      final errorData = jsonDecode(respuesta.body);
+      setState(() {
+        _errorMessage =
+            errorData['message'] ??
+            'Error al registrar ESP (Código ${respuesta.statusCode})';
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error ${respuesta.statusCode}: ${respuesta.body}';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,8 +194,9 @@ void _manejarErrorRespuesta(http.Response respuesta) {
                         if (value == null || value.isEmpty) {
                           return 'Ingrese la dirección MAC';
                         }
-                        if (!RegExp(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')
-                            .hasMatch(value)) {
+                        if (!RegExp(
+                          r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$',
+                        ).hasMatch(value)) {
                           return 'Formato MAC inválido';
                         }
                         return null;
@@ -256,23 +273,51 @@ void _manejarErrorRespuesta(http.Response respuesta) {
                   }
                   return null;
                 },
-                onChanged: (value) => _confirmacionSector = int.tryParse(value) ?? 0,
+                onChanged: (value) =>
+                    _confirmacionSector = int.tryParse(value) ?? 0,
               ),
-
-              // Botón y mensajes
-              const SizedBox(height: 30),
+              const SizedBox(height: 10),
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
               else
-                ElevatedButton(
-                  onPressed: _registrarESP,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffFFE4AF),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                  child: const Text('REGISTRAR ESP'),
+                const SizedBox(height: 20),
+              Text(
+                'Tipo de ESP',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              ListTile(
+                title: const Text('Receptor'),
+                leading: Radio<String>(
+                  value: 'receptor',
+                  groupValue: _tipoESP,
+                  onChanged: (value) {
+                    setState(() {
+                      _tipoESP = value;
+                    });
+                  },
                 ),
+              ),
+              ListTile(
+                title: const Text('Emisor'),
+                leading: Radio<String>(
+                  value: 'emisor',
+                  groupValue: _tipoESP,
+                  onChanged: (value) {
+                    setState(() {
+                      _tipoESP = value;
+                    });
+                  },
+                ),
+              ),
+              ElevatedButton(
+                onPressed: _registrarESP,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffFFE4AF),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+                child: const Text('REGISTRAR ESP'),
+              ),
 
               if (_errorMessage.isNotEmpty)
                 Padding(
