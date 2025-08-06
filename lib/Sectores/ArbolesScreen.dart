@@ -24,14 +24,30 @@ class _ArbolesScreenState extends State<ArbolesScreen> {
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
-      final filteredData = jsonData
+
+      final filteredDataBySector = jsonData
           .where((item) {
             final sector = item['sensor']['sector']["idSector"];
             return sector != null && sector.toString() == idSector;
           })
           .map((e) => e as Map<String, dynamic>)
           .toList();
-      return filteredData;
+
+
+      final Map<int, Map<String, dynamic>> latestDataBySensor = {};
+      for (var item in filteredDataBySector) {
+        final int idSensor = item['sensor']['idSensor'];
+        final DateTime timestamp = DateTime.parse(item['timestamp']);
+
+        if (!latestDataBySensor.containsKey(idSensor) ||
+            timestamp.isAfter(
+              DateTime.parse(latestDataBySensor[idSensor]!['timestamp']),
+            )) {
+          latestDataBySensor[idSensor] = item;
+        }
+      }
+
+      return latestDataBySensor.values.toList();
     } else {
       throw Exception('Error al cargar los datos de humedad');
     }
@@ -40,18 +56,19 @@ class _ArbolesScreenState extends State<ArbolesScreen> {
   void cargarDatos() async {
     if (routeData == null) return;
     datosFiltrados = await fetchFilteredData(routeData!["idSector"]!);
-    cards = _buildAllCards(); // Construimos las tarjetas
+    cards = _buildAllCards(); 
     setState(() {
-      isLoading = false; // Ya terminó la carga
+      isLoading = false;
     });
   }
 
   List<Widget> _buildAllCards() {
     List<Widget> generatedCards = [];
     for (var item in datosFiltrados) {
+      
       final String jsonString = item['data'];
       final List<dynamic> sensores = json.decode(jsonString);
-
+      
       for (var sensorData in sensores) {
         final sensorId = sensorData['sensor'];
         final humedad = sensorData['humedad'] ?? '0%';
