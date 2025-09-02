@@ -12,13 +12,23 @@ import 'package:flutter_application_2/ESP/WifiESP.dart';
 import 'package:flutter_application_2/ESP/RegisterESP.dart';
 import 'package:flutter_application_2/ESP/ListaESP.dart';
 import 'package:flutter_application_2/log-reg/presentation/screens/login_screen.dart';
+import 'package:flutter_application_2/splashScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(const MyApp());
+  void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('auth_token');
+
+  runApp(MyApp(initialToken: token));
+}
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String? initialToken;
+  const MyApp({super.key, this.initialToken});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +39,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: const LoginScreen(),
+      home: const SplashScreen(),
       routes: {
         '/riego': (context) => const RiegoScreen(),
         '/esp': (context) => const ESPScreen(),

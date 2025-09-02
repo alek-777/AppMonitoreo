@@ -34,7 +34,7 @@ class LoginScreenState extends State<LoginScreen> {
       password: _passwordController.text.trim(),
     );
 
-    final result = await ApiService.loginUser(newUser);
+    final result = await ApiService.loginUser(newUser);    
 
     if (!mounted) return;
 
@@ -45,12 +45,13 @@ class LoginScreenState extends State<LoginScreen> {
       final username = userData['username'];
       final idUser = userData['idUser'];
       final idCompany = userData['company']['idCompany'];
+      final token = result['data']['access_token'];
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('username', username);
       await prefs.setInt('idUser', idUser);
       await prefs.setInt('idCompany', idCompany);
-
+      await prefs.setString('auth_token', token);
 
       Navigator.pushReplacement(
         context,

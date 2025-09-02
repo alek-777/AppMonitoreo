@@ -57,6 +57,32 @@ class ApiService {
     }
   }
 
+  // LOGIN TOKEN
+  static Future<Map<String, dynamic>> authtoken(String token) async {
+    final url = Uri.parse('$baseUrl/auth/authToken');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'token': token}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        return {'success': true, 'data': decoded};
+      } else {
+        final decoded = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': decoded['message'] ?? 'Error al iniciar sesión',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error de conexión: $e'};
+    }
+  }
+
   static Future<Map<String, dynamic>> deleteCompany(int id) async {
     final encodedId = Uri.encodeComponent('$id');
     final url = Uri.parse('$baseUrl/company/$encodedId');
